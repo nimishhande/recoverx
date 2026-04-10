@@ -4,8 +4,10 @@ import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { Plus, X, Briefcase, Clock, DollarSign, Target, Mic } from 'lucide-react';
 import { getProjectsFromDB, addProjectToDB } from '../services/dbServices';
+import { useAuth } from '../context/AuthContext';
 
 const Projects = () => {
+  const { user } = useAuth();
   const [projects, setProjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
@@ -98,12 +100,15 @@ const Projects = () => {
   };
 
   useEffect(() => {
-    loadProjects();
-  }, []);
+    if (user?.id) {
+      loadProjects();
+    }
+  }, [user]);
 
   const loadProjects = async () => {
+    if (!user?.id) return;
     setIsLoading(true);
-    const data = await getProjectsFromDB();
+    const data = await getProjectsFromDB(user.id);
     setProjects(data);
     setIsLoading(false);
   };
@@ -112,8 +117,9 @@ const Projects = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!user?.id) return;
     setIsAdding(true);
-    const res = await addProjectToDB(formData);
+    const res = await addProjectToDB(user.id, formData);
     if (res.success) {
       await loadProjects();
       setIsModalOpen(false);

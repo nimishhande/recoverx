@@ -3,48 +3,85 @@ import axios from 'axios';
 
 const AuthContext = createContext(null);
 
+// Decode a JWT payload (no verification needed on client side)
+const decodeToken = (token) => {
+  try {
+    return JSON.parse(atob(token.split('.')[1]));
+  } catch {
+    return null;
+  }
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Set API base URL - works locally without .env, and supports Vercel/Production env vars
   const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1/auth';
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      // Typically you'd verify the token with the backend here
-      setUser({ token });
-    }
-    setLoading(false);
+    const initAuth = async () => {
+      const token = localStorage.getItem('rx_token');
+      if (token) {
+        const decoded = decodeToken(token);
+        if (decoded && decoded.exp * 1000 > Date.now()) {
+          // IMPORTANT: Fetch fresh profile data to avoid "Greeting as User" bug
+          try {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', decoded.id)
+              .single();
+
+            if (profile) {
+              setUser({ 
+                token, 
+                ...decoded, 
+                firstname: profile.firstname, 
+                lastname: profile.lastname 
+              });
+            } else {
+              setUser({ token, ...decoded });
+            }
+          } catch (e) {
+            setUser({ token, ...decoded });
+          }
+        } else {
+          localStorage.removeItem('rx_token');
+        }
+      }
+      setLoading(false);
+    };
+
+    initAuth();
   }, []);
 
   const login = async (email, password) => {
     try {
-      // Bypassing backend validation to ensure immediate demo success
-      const token = 'demo-presentation-token-123';
-      localStorage.setItem('token', token);
-      setUser({ token });
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: 'Login failed' };
+      const { data } = await axios.post(`${API_URL}/authenticate`, { email, password });
+      const { token } = data;
+      localStorage.setItem('rx_token', token);
+      const decoded = decodeToken(token);
+      setUser({ token, ...decoded });
+      return { success: true, user: decoded };
+    } catch (err) {
+      const message = err.response?.data?.message || 'Login failed. Please check your credentials.';
+      return { success: false, error: message };
     }
   };
 
   const register = async (userData) => {
     try {
-      // Mock instant registration
-      const token = 'demo-presentation-token-123';
-      localStorage.setItem('token', token);
-      setUser({ token });
+      // Register only — do NOT auto-login. User must sign in manually.
+      await axios.post(`${API_URL}/register`, userData);
       return { success: true };
-    } catch (error) {
-      return { success: false, error: 'Registration failed' };
+    } catch (err) {
+      const message = err.response?.data?.message || 'Registration failed. Please try again.';
+      return { success: false, error: message };
     }
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
+    localStorage.removeItem('rx_token');
     setUser(null);
   };
 

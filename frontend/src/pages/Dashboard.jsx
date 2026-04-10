@@ -7,11 +7,20 @@ import {
 import { Target, AlertTriangle, Clock, TrendingDown, AlertCircle, CheckCircle, Send, MessageSquareText, X } from 'lucide-react';
 import { getProjectsFromDB, getAllTimeLogsFromDB } from '../services/dbServices';
 import { generateGlobalMetrics } from '../utils/calculations';
+import { useAuth } from '../context/AuthContext';
 
 const COLORS = ['#ff6b6b', '#f59e0b', '#3b82f6', '#a855f7', '#00cc6a'];
 const rxBorder = 'rgba(0, 255, 136, 0.1)';
 
 const Dashboard = () => {
+  const { user } = useAuth();
+  
+  let rawName = user?.firstname;
+  if (!rawName || rawName.toLowerCase() === 'user' || rawName.trim() === '') {
+    rawName = user?.email ? user.email.split('@')[0] : 'there';
+  }
+  const firstname = rawName !== 'there' ? (rawName.charAt(0).toUpperCase() + rawName.slice(1)) : 'there';
+
   const [metrics, setMetrics] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -50,14 +59,17 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    loadDashboardData();
-  }, []);
+    if (user?.id) {
+      loadDashboardData();
+    }
+  }, [user]);
 
   const loadDashboardData = async () => {
+    if (!user?.id) return;
     setIsLoading(true);
     try {
-      const projects = await getProjectsFromDB();
-      const logs = await getAllTimeLogsFromDB();
+      const projects = await getProjectsFromDB(user.id);
+      const logs = await getAllTimeLogsFromDB(user.id);
       const computed = generateGlobalMetrics(projects, logs);
       setMetrics({ ...computed, projectsCount: projects.length });
     } catch (error) {
@@ -79,8 +91,8 @@ const Dashboard = () => {
     return (
       <div className="rx-dashboard">
         <div className="rx-page-header">
-          <h2 className="rx-page-title">Dashboard Overview</h2>
-          <p className="rx-page-subtitle">Add a project to begin unlocking metrics.</p>
+          <h2 className="rx-page-title">Welcome back, <span style={{ color: 'var(--rx-green)' }}>{firstname}</span> 👋</h2>
+          <p className="rx-page-subtitle">Add a project to begin unlocking your profit metrics.</p>
         </div>
         <div className="rx-empty-state">
           <div className="rx-empty-icon">📈</div>
@@ -96,7 +108,7 @@ const Dashboard = () => {
   return (
     <div className="rx-dashboard">
       <div className="rx-page-header">
-        <h2 className="rx-page-title">Dashboard Overview</h2>
+        <h2 className="rx-page-title">Welcome back, <span style={{ color: 'var(--rx-green)' }}>{firstname}</span> 👋</h2>
         <p className="rx-page-subtitle">Your real-time freelance profitability and performance metrics.</p>
       </div>
 

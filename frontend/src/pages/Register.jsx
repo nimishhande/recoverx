@@ -48,7 +48,7 @@ const Register = () => {
     setError('');
     const res = await register(formData);
     if (res.success) {
-      navigate('/');
+      navigate('/login', { state: { registered: true, email: formData.email } });
     } else {
       setError(res.error);
     }

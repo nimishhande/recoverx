@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
   TrendingUp,
@@ -36,8 +36,14 @@ const navItems = [
 ];
 
 const Sidebar = ({ isOpen, onClose }) => {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
   return (
     <>
@@ -85,13 +91,32 @@ const Sidebar = ({ isOpen, onClose }) => {
         {/* Footer */}
         <div className="rx-sidebar-footer">
           <div className="rx-sidebar-user">
-            <div className="rx-sidebar-avatar">PL</div>
+            <div className="rx-sidebar-avatar">
+              {(() => {
+                if (!user) return 'PL';
+                let rawName = user.firstname;
+                if (!rawName || rawName.toLowerCase() === 'user' || rawName.trim() === '') {
+                  rawName = user.email ? user.email.split('@')[0] : 'U';
+                }
+                return `${rawName[0].toUpperCase()}${user.lastname?.[0] || ''}`;
+              })()}
+            </div>
             <div className="rx-sidebar-user-info">
-              <div className="rx-sidebar-user-name">ProfitLens User</div>
-              <div className="rx-sidebar-user-role">Freelancer</div>
+              <div className="rx-sidebar-user-name">
+                {(() => {
+                  if (!user) return 'ProfitLens User';
+                  let rawName = user.firstname;
+                  if (!rawName || rawName.toLowerCase() === 'user' || rawName.trim() === '') {
+                    rawName = user.email ? user.email.split('@')[0] : 'User';
+                  }
+                  const displayFirst = rawName !== 'User' ? (rawName.charAt(0).toUpperCase() + rawName.slice(1)) : 'User';
+                  return `${displayFirst} ${user.lastname || ''}`.trim();
+                })()}
+              </div>
+              <div className="rx-sidebar-user-role">{user?.role || 'Freelancer'}</div>
             </div>
           </div>
-          <button onClick={logout} className="rx-btn-logout-sidebar">
+          <button onClick={handleLogout} className="rx-btn-logout-sidebar">
             <LogOut size={16} />
             Sign out
           </button>

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Lock, ArrowRight, Fingerprint, Shield, Eye, EyeOff, Zap, TrendingUp } from 'lucide-react';
 import GridPattern from '../components/GridPattern';
 import RepelParticles from '../components/RepelParticles';
@@ -12,11 +12,23 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState(null);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const formRef = useRef(null);
+
+  // Pre-fill email and show success if coming from registration
+  useEffect(() => {
+    if (location.state?.registered) {
+      setSuccess('Account created! Please sign in below.');
+      if (location.state?.email) setEmail(location.state.email);
+      // Clear state so refreshing doesn't re-show the banner
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   // Staggered animation
   const [visible, setVisible] = useState(false);
@@ -31,19 +43,7 @@ const Login = () => {
     setError('');
     const res = await login(email, password);
     if (res.success) {
-      // Voice Greeting Feature (AI voice)
-      const utterance = new SpeechSynthesisUtterance(`Welcome back, Sanchita. Initializing your profit intelligence engine.`);
-      utterance.rate = 0.95; 
-      utterance.pitch = 1.05;
-      
-      // Voice matching logic runs asynchronously in some browsers, but we set a default
-      const voices = window.speechSynthesis.getVoices();
-      const bestVoice = voices.find(v => v.lang.includes('en') && (v.name.includes('Female') || v.name.includes('Zira')));
-      if (bestVoice) utterance.voice = bestVoice;
-
-      window.speechSynthesis.speak(utterance);
-
-      navigate('/');
+      navigate('/dashboard');
     } else {
       setError(res.error);
     }
@@ -125,6 +125,13 @@ const Login = () => {
 
             <h1 className="rx-auth-title">Welcome back</h1>
             <p className="rx-auth-subtitle">Sign in to your profit dashboard</p>
+
+            {success && (
+              <div className="rx-success-banner">
+                <div className="rx-success-icon">✓</div>
+                {success}
+              </div>
+            )}
 
             {error && (
               <div className="rx-error-banner">

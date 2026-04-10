@@ -3,10 +3,12 @@ import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import { Play, Square, Check, Clock, Save, FileText } from 'lucide-react';
 import { getProjectsFromDB, addTimeLogToDB } from '../services/dbServices';
+import { useAuth } from '../context/AuthContext';
 
 const CATEGORIES = ['Billable', 'Calls', 'Revisions', 'Admin', 'Scope'];
 
 const TimeTracking = () => {
+  const { user } = useAuth();
   const [projects, setProjects] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -25,13 +27,16 @@ const TimeTracking = () => {
   const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
-    loadProjects();
+    if (user?.id) {
+      loadProjects();
+    }
     return () => clearInterval(timerRef.current);
-  }, []);
+  }, [user]);
 
   const loadProjects = async () => {
+    if (!user?.id) return;
     setIsLoading(true);
-    const data = await getProjectsFromDB();
+    const data = await getProjectsFromDB(user.id);
     setProjects(data);
     if (data.length > 0) setProjectId(data[0].id);
     setIsLoading(false);
@@ -97,7 +102,7 @@ const TimeTracking = () => {
       date
     };
 
-    const res = await addTimeLogToDB(projectId, logData);
+    const res = await addTimeLogToDB(user.id, projectId, logData);
     if (res.success) {
       setSuccessMessage(`Successfully logged ${manualHours}h for "${task}"`);
       handleReset();

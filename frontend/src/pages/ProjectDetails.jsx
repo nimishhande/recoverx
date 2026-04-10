@@ -3,8 +3,10 @@ import { useParams, Link } from 'react-router-dom';
 import Card from '../components/ui/Card';
 import { Clock, AlertTriangle, CheckCircle, Brain, ArrowLeft } from 'lucide-react';
 import { getProjectFromDB, getTimeLogsFromDB } from '../services/dbServices';
+import { useAuth } from '../context/AuthContext';
 
 const ProjectDetails = () => {
+  const { user } = useAuth();
   const { id } = useParams();
   const [project, setProject] = useState(null);
   const [logs, setLogs] = useState([]);

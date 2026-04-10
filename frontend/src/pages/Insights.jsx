@@ -4,22 +4,27 @@ import { Brain, AlertTriangle, CheckCircle, TrendingDown, ShieldAlert, Award, Ac
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { getProjectsFromDB, getAllTimeLogsFromDB } from '../services/dbServices';
 import { generateGlobalMetrics } from '../utils/calculations';
+import { useAuth } from '../context/AuthContext';
 
 const Insights = () => {
+  const { user } = useAuth();
   const [insights, setInsights] = useState([]);
   const [radarData, setRadarData] = useState([]);
   const [clientTiers, setClientTiers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (user?.id) {
+      loadData();
+    }
+  }, [user]);
 
   const loadData = async () => {
+    if (!user?.id) return;
     setIsLoading(true);
     try {
-      const projects = await getProjectsFromDB();
-      const logs = await getAllTimeLogsFromDB();
+      const projects = await getProjectsFromDB(user.id);
+      const logs = await getAllTimeLogsFromDB(user.id);
       if (projects.length > 0) {
         const computed = generateGlobalMetrics(projects, logs);
         setInsights(computed.detailedInsights || []);

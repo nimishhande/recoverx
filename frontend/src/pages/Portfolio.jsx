@@ -1,20 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import Card from '../components/ui/Card';
 import { getProjectsFromDB, getAllTimeLogsFromDB } from '../services/dbServices';
+import { useAuth } from '../context/AuthContext';
 
 const Portfolio = () => {
+  const { user } = useAuth();
   const [clientStats, setClientStats] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (user?.id) {
+      loadData();
+    }
+  }, [user]);
 
   const loadData = async () => {
+    if (!user?.id) return;
     setIsLoading(true);
     try {
-      const projects = await getProjectsFromDB();
-      const logs = await getAllTimeLogsFromDB();
+      const projects = await getProjectsFromDB(user.id);
+      const logs = await getAllTimeLogsFromDB(user.id);
       
       const clientMap = {};
 

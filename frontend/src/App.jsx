@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
@@ -18,13 +19,26 @@ const PrivateRoute = ({ children }) => {
   return user ? children : <Navigate to="/login" />;
 };
 
+const PublicOnlyRoute = ({ children }) => {
+  const { user } = useAuth();
+  return user ? <Navigate to="/dashboard" /> : children;
+};
+
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      
-      {/* Protected Routes directly in AppLayout */}
+      {/* Landing page — public root */}
+      <Route path="/" element={<Landing />} />
+
+      {/* Auth pages — redirect to dashboard if already logged in */}
+      <Route path="/login" element={
+        <PublicOnlyRoute><Login /></PublicOnlyRoute>
+      } />
+      <Route path="/register" element={
+        <PublicOnlyRoute><Register /></PublicOnlyRoute>
+      } />
+
+      {/* Protected Routes inside AppLayout */}
       <Route
         element={
           <PrivateRoute>
@@ -32,7 +46,6 @@ function AppRoutes() {
           </PrivateRoute>
         }
       >
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/projects" element={<Projects />} />
         <Route path="/projects/:id" element={<ProjectDetails />} />
@@ -40,7 +53,7 @@ function AppRoutes() {
         <Route path="/portfolio" element={<Portfolio />} />
         <Route path="/insights" element={<Insights />} />
       </Route>
-      
+
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
